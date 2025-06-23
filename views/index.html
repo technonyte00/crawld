@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,17 +20,56 @@
     <button type="submit">begin</button>
   </form>
 
+  <div style="margin-top:1em;">
+    <progress id="progressBar" value="0" max="100" style="width:100%; height:20px;"></progress>
+    <div id="progressText" style="margin-top:0.5em;">Waiting to start...</div>
+  </div>
+
   <pre id="output" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; margin-top: 1em; height: 300px; overflow: auto;"></pre>
 
   <script>
+    let crawlRunning = false;
+
+    async function pollProgress() {
+      if (!crawlRunning) return;
+      try {
+        const res = await fetch("/progress");
+        const { done, total } = await res.json();
+        const percent = total ? (done / total) * 100 : 0;
+
+        document.getElementById("progressBar").value = percent;
+        document.getElementById("progressText").textContent = `Crawled ${done} of ${total} pages`;
+
+        if (done < total) {
+          setTimeout(pollProgress, 1000);
+        } else {
+          crawlRunning = false;
+          document.getElementById("progressText").textContent = "Crawl complete! Fetching results...";
+          fetchResults();
+        }
+      } catch (e) {
+        document.getElementById("progressText").textContent = "Error fetching progress.";
+        crawlRunning = false;
+      }
+    }
+
+    async function fetchResults() {
+      const res = await fetch("/results");
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
     document.getElementById("crawlerForm").onsubmit = async (e) => {
       e.preventDefault();
+      crawlRunning = true;
 
       const formData = new FormData(e.target);
       const seedUrls = formData.get("seedUrls").split(",").map(s => s.trim()).filter(s => s);
       const maxDepth = formData.get("maxDepth");
 
-      document.getElementById("output").textContent = "srarting hold up";
+      document.getElementById("output").textContent = "Starting crawl... please wait.";
+      document.getElementById("progressBar").value = 0;
+      document.getElementById("progressText").textContent = "Starting crawl...";
 
       const res = await fetch("/start", {
         method: "POST",
@@ -40,12 +78,11 @@
       });
 
       const data = await res.json();
-      document.getElementById("output").textContent = `uh im done i crawled ${data.total}\n\nfetchingg...`;
-
-      const resultsRes = await fetch("/results");
-      const resultsData = await resultsRes.json();
-
-      document.getElementById("output").textContent = JSON.stringify(resultsData, null, 2);
+      if (data.done) {
+        pollProgress();
+      } else {
+        document.getElementById("progressText").textContent = "Failed to start crawl.";
+      }
     };
   </script>
 </body>
