@@ -1,1 +1,52 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>crawld</title>
+</head>
+<body>
+  <h1>configuration</h1>
+  <form id="crawlerForm">
+    <label>
+      seed urls (comma separated):<br />
+      <input name="seedUrls" style="width: 100%" value="https://example.com,https://railway.app" />
+    </label>
+    <br /><br />
+    <label>
+      max depth: <br />
+      <input name="maxDepth" type="number" value="2" min="1" />
+    </label>
+    <br /><br />
+    <button type="submit">begin</button>
+  </form>
+
+  <pre id="output" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 1em; margin-top: 1em; height: 300px; overflow: auto;"></pre>
+
+  <script>
+    document.getElementById("crawlerForm").onsubmit = async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const seedUrls = formData.get("seedUrls").split(",").map(s => s.trim()).filter(s => s);
+      const maxDepth = formData.get("maxDepth");
+
+      document.getElementById("output").textContent = "srarting hold up";
+
+      const res = await fetch("/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seedUrls, maxDepth }),
+      });
+
+      const data = await res.json();
+      document.getElementById("output").textContent = `uh im done i crawled ${data.total}\n\nfetchingg...`;
+
+      const resultsRes = await fetch("/results");
+      const resultsData = await resultsRes.json();
+
+      document.getElementById("output").textContent = JSON.stringify(resultsData, null, 2);
+    };
+  </script>
+</body>
+</html>
