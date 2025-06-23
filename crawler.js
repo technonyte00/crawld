@@ -1,3 +1,15 @@
+// crawler.js
+const axios = require("axios");
+const cheerio = require("cheerio");
+const { config } = require("./config");
+
+const visited = new Set();
+const results = [];
+const progress = {
+  total: 0,
+  done: 0,
+};
+
 async function crawl(url, depth = 0) {
   if (visited.has(url) || depth > config.maxDepth) {
     console.log(`Skipping ${url} (visited or depth ${depth} too deep)`);
@@ -50,3 +62,5 @@ async function crawl(url, depth = 0) {
     console.log(`✅ Done ${progress.done} of ${progress.total}`);
   }
 }
+
+module.exports = { crawl, results, progress };
