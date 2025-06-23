@@ -1,8 +1,7 @@
-// server.js rawr
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const { crawl, results } = require("./crawler");
+const { crawl, results, progress } = require("./crawler");
 const { config, updateConfig } = require("./config");
 
 const app = express();
@@ -16,7 +15,11 @@ app.get("/", (req, res) => {
 
 app.post("/start", async (req, res) => {
   updateConfig(req.body);
+
   results.length = 0;
+  progress.total = 0;
+  progress.done = 0;
+
 
   for (const url of config.seedUrls) {
     await crawl(url);
@@ -27,6 +30,12 @@ app.post("/start", async (req, res) => {
 
   res.json({ done: true, total: results.length });
 });
+
+
+app.get("/progress", (req, res) => {
+  res.json(progress);
+});
+
 
 app.get("/results", (req, res) => {
   const resultsPath = path.join(__dirname, "data/results.json");
